@@ -10,29 +10,43 @@ import pupil_apriltags as apriltag
 from scipy import ndimage
 
 _DEBUG = False
+_DEBUG_SAVEIMG
 
 
-def vision_debug() -> None:
+def vision_debug(saveimg=False) -> None:
     """
     开启视觉模块调试功能
     启用下列三个窗口用于调试:
     Origin, Process, Result
     """
-    global _DEBUG
+    global _DEBUG, _DEBUG_SAVEIMG
     _DEBUG = True
-    x_offset = 400
-    y_offset = 50
-    empty_frame = np.zeros((100, 100, 3), dtype=np.uint8)
-    cv2.namedWindow("Origin", cv2.WINDOW_AUTOSIZE)
-    cv2.namedWindow("Process", cv2.WINDOW_AUTOSIZE)
-    cv2.namedWindow("Result", cv2.WINDOW_AUTOSIZE)
-    cv2.moveWindow("Origin", 0, 0)
-    cv2.moveWindow("Process", x_offset, y_offset)
-    cv2.moveWindow("Result", x_offset * 2, y_offset * 2)
-    cv2.imshow("Origin", empty_frame)
-    cv2.imshow("Process", empty_frame)
-    cv2.imshow("Result", empty_frame)
-    cv2.waitKey(10)
+    _DEBUG_SAVEIMG = saveimg
+    if not _DEBUG_SAVEIMG:
+        x_offset = 400
+        y_offset = 50
+        empty_frame = np.zeros((100, 100, 3), dtype=np.uint8)
+        cv2.namedWindow("Origin", cv2.WINDOW_AUTOSIZE)
+        cv2.namedWindow("Process", cv2.WINDOW_AUTOSIZE)
+        cv2.namedWindow("Result", cv2.WINDOW_AUTOSIZE)
+        cv2.moveWindow("Origin", 0, 0)
+        cv2.moveWindow("Process", x_offset, y_offset)
+        cv2.moveWindow("Result", x_offset * 2, y_offset * 2)
+        cv2.imshow("Origin", empty_frame)
+        cv2.imshow("Process", empty_frame)
+        cv2.imshow("Result", empty_frame)
+        cv2.waitKey(10)
+
+
+def debug_imshow(name, image) -> None:
+    if _DEBUG:
+        if image is None:
+            return
+        if _DEBUG_SAVEIMG:
+            cv2.imwrite(f"debug_{name}.jpg", image)
+        else:
+            cv2.imshow(name, image)
+            cv2.waitKey(1)
 
 
 def black_line(image, type: int = 1, theta_threshold=0.25) -> Tuple[bool, float, float, float]:
@@ -50,7 +64,7 @@ def black_line(image, type: int = 1, theta_threshold=0.25) -> Tuple[bool, float,
     hsv_img = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv_img, LOWER, UPPER)
     if _DEBUG:
-        cv2.imshow("Process", mask)
+        debug_imshow("Process", mask)
 
     target_theta = 0 if type == 1 else np.pi / 2
     # lines = cv2.HoughLines(mask, 1, np.pi/180, threshold=400, max_theta=0.1)
@@ -94,7 +108,7 @@ def black_line(image, type: int = 1, theta_threshold=0.25) -> Tuple[bool, float,
             y2 = int(y0 - 1000 * np.cos(theta))
             if _DEBUG:
                 cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                cv2.imshow("Result", image)
+                debug_imshow("Result", image)
             x = abs((x1 + x2) / 2)
             y = abs((y1 + y2) / 2)
             size = image.shape
@@ -131,7 +145,7 @@ def find_yellow_code(image) -> Tuple[bool, float, float]:
     conts, hier = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if _DEBUG:
         cv2.drawContours(image, conts, -1, (0, 255, 0), 3)  # 画出边框
-        cv2.imshow("Process", image)
+        debug_imshow("Process", image)
     if conts:
         max_area = 0.0
         max_index = 0
@@ -149,7 +163,7 @@ def find_yellow_code(image) -> Tuple[bool, float, float]:
             cy = int(M["m01"] / (M["m00"]))
             if _DEBUG:
                 cv2.circle(image, (cx, cy), 8, (0, 0, 255), thickness=-1)
-                cv2.imshow("Result", image)
+                debug_imshow("Result", image)
             size = image.shape
             return True, cx - size[1] / 2, cy - size[0] / 2
     return False, 0, 0
@@ -184,7 +198,7 @@ def find_laser_point(img) -> Tuple[bool, float, float]:
     # kernel = np.ones((5, 5), np.uint8)  # 定义卷积核
     # img = cv2.dilate(img, kernel)
     if _DEBUG:
-        cv2.imshow("Process", img)
+        debug_imshow("Process", img)
     if glob_detector is None:
         # 设置Blob检测参数
         params = cv2.SimpleBlobDetector_Params()  # type: ignore
@@ -218,7 +232,7 @@ def find_laser_point(img) -> Tuple[bool, float, float]:
             (0, 255, 0),
             cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
         )
-        cv2.imshow("Result", img_with_keypoints)
+        debug_imshow("Result", img_with_keypoints)
     if keypoints:
         for i in range(0, len(keypoints)):
             x = keypoints[i].pt[0]
@@ -246,7 +260,7 @@ def find_red_area(img) -> Tuple[bool, float, float]:
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
     img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
     contours, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    MIN_AERA = 600
+    MIN_AERA = 400
     # filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) >= MIN_AERA]
     areas = [cv2.contourArea(cnt) for cnt in contours]
     sorted_contours = sorted(zip(areas, contours), key=lambda x: x[0], reverse=True)
@@ -254,7 +268,7 @@ def find_red_area(img) -> Tuple[bool, float, float]:
     if _DEBUG:
         result_image = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
         cv2.drawContours(result_image, filtered_contours, -1, (0, 255, 0), 2)
-        cv2.imshow("Process", result_image)
+        debug_imshow("Process", result_image)
     if len(filtered_contours) == 0:
         return False, 0, 0
     for cnt in filtered_contours:
@@ -267,7 +281,7 @@ def find_red_area(img) -> Tuple[bool, float, float]:
             # 在结果图像上绘制中点qqq
             if _DEBUG:
                 cv2.circle(result_image, (center_x, center_y), 5, (0, 0, 255), -1)
-                cv2.imshow("Result", result_image)
+                debug_imshow("Result", result_image)
         return True, center_x - img.shape[1] / 2, center_y - img.shape[0] / 2
 
 
@@ -323,7 +337,7 @@ def find_QRcode_contour(frame) -> Tuple[bool, float, float]:
     closed = cv2.erode(closed, None, iterations=4)
     closed = cv2.dilate(closed, None, iterations=4)
     if _DEBUG:
-        cv2.imshow("Process", closed)
+        debug_imshow("Process", closed)
     # 处理轮廓，找出最大轮廓
     cnts, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -344,7 +358,7 @@ def find_QRcode_contour(frame) -> Tuple[bool, float, float]:
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
             cv2.circle(image, (cx, cy), 2, (0, 255, 0), 8)  # 做出中心坐标
             cv2.drawContours(image, [box], -1, (0, 255, 0), 3)
-            cv2.imshow("Result", image)
+            debug_imshow("Result", image)
         return True, x_offset, y_offset
     else:
         return False, 0, 0
@@ -465,7 +479,7 @@ def shape_recognition(image, LOWER, UPPER):
     closed = cv2.erode(closed, None, iterations=4)
     closed = cv2.dilate(closed, None, iterations=5)
     if _DEBUG:
-        cv2.imshow("Process", mask)
+        debug_imshow("Process", mask)
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if len(contours) > 0:
         for cnt in range(len(contours)):
@@ -481,7 +495,7 @@ def shape_recognition(image, LOWER, UPPER):
             if corners >= 10:
                 shapes["circle"] = shapes.get("circle", 0) + 1
     if _DEBUG:
-        cv2.imshow("Result", image)
+        debug_imshow("Result", image)
     if len(shapes) == 0:
         return "unknown"
     max_shape = max(shapes, key=shapes.get)
@@ -498,7 +512,7 @@ def hsv_checker(img, lower, upper, threshold=0.4) -> bool:
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv, lower, upper)
     if _DEBUG:
-        cv2.imshow("Process", mask)
+        debug_imshow("Process", mask)
     return cv2.countNonZero(mask) / (img.shape[0] * img.shape[1]) > threshold
 
 
@@ -523,7 +537,7 @@ def dp_outline_calc(frame) -> float:
     area = cv2.contourArea(approx)
     if _DEBUG:
         frame = cv2.drawContours(frame, approx, -1, (255, 0, 0), 3)
-        cv2.imshow("Process", frame)
+        debug_imshow("Process", frame)
     return area
 
 
@@ -574,11 +588,11 @@ def FLANN_match(train_img, frame) -> Tuple[int, Tuple[float, float]]:
                 flags=2,
             )
             img3 = cv2.drawMatches(train_img, kp1, frame, kp2, good, None, **draw_params)
-            cv2.imshow("Process", img3)
+            debug_imshow("Process", img3)
         ####### 目标匹配
         if _DEBUG:
             frame = cv2.polylines(frame, [dst], True, 255, 3, cv2.LINE_AA)
-            cv2.imshow("Result", frame)
+            debug_imshow("Result", frame)
         ###############
         return len(good), center_point
     else:
@@ -610,7 +624,7 @@ def contours_match(train_img, frame) -> float:
     matching_value = cv2.matchShapes(cnt1, cnt2, 1, 0.0)
     if _DEBUG:
         frame = cv2.drawContours(frame, contours1, -1, (255, 0, 0), 3)
-        cv2.imshow("Result", frame)
+        debug_imshow("Result", frame)
     return matching_value
 
 
@@ -673,7 +687,7 @@ class Meanshift(object):
         cy = int(y + h / 2)
         if _DEBUG:
             output_img = cv2.rectangle(frame, (x, y), (x + w, y + h), 255, 2)
-            cv2.imshow("Result", output_img)
+            debug_imshow("Result", output_img)
         return cx - self.img_shape[1] / 2, cy - self.img_shape[0] / 2
 
     def reset_roi(self, ROI: Optional[Tuple[Union[int, float], ...]] = None) -> None:
@@ -717,9 +731,9 @@ def mixed_background_sub(frame) -> Tuple[bool, List[Tuple[float, float]]]:
             if _DEBUG:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 0), 2)
     if _DEBUG:
-        # cv2.imshow("diff", frame & cv2.cvtColor(fgmask, cv2.COLOR_GRAY2BGR))
-        cv2.imshow("Process", th)
-        cv2.imshow("Result", frame)
+        # debug_imshow("diff", frame & cv2.cvtColor(fgmask, cv2.COLOR_GRAY2BGR))
+        debug_imshow("Process", th)
+        debug_imshow("Result", frame)
     if len(detection_list) > 0:
         return True, detection_list
     return False, []
@@ -1020,7 +1034,7 @@ def detect_apriltag(
             f = r.tag_family.decode("utf-8")
             i = r.tag_id
             cv2.putText(img, f"{f}:{i}", (a[0], a[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-        cv2.imshow("Result", img)
+        debug_imshow("Result", img)
     return results
 
 

@@ -17,8 +17,7 @@ fc.wait_for_connection()
 # while True:
 #     pulse = int(input("Pulse: "))
 #     logger.debug(f"Set pulse: {pulse}")
-#     fc.set_servo_pulse(fc.SERVO1, pulse)
-#     fc.set_servo_pulse(fc.SERVO2, pulse)
+#     fc.set_two_servo_pulse(pulse,pulse)
 camera, id = open_camera()
 
 print(f"Camera ID: {id}")
@@ -26,13 +25,14 @@ get = change_cam_resolution(camera, 920, 480, 60)
 print(f"Info: {get[0]}x{get[1]} @ {get[2]}fps")
 vision_debug()
 set_cam_autowb(camera, True)
-set_manual_exporsure(camera, -5.5)
+set_manual_exporsure(camera, -6.5)
 pid_x = PID(0.4, 0.02, 0.02, setpoint=0, output_limits=(-180, 180), auto_mode=False)
 pid_y = PID(0.6, 0.01, 0.005, setpoint=10, output_limits=(-180, 180), auto_mode=False)
 fc.set_two_servo_pulse(round(1180), round(1900))  # 1900
+fc.set_laser(False)
 x_pwm = 1180.0
 y_pwm = 1900.0
-pwm_x_limit = (500, 2000)
+pwm_x_limit = (500, 2500)
 pwm_y_limit = (1500, 2500)
 
 
@@ -43,25 +43,42 @@ y_random_range = 4
 max_random_add = 30
 found = False
 found_time = 0.0
+lost_time = 0.0
 auto_mode = False
+lost = False
+
+y_base = 1900
+y_sta = 10
+y_k = 0.2
+y_limit = (-20, 20)
 
 
 def process(img: np.ndarray) -> np.ndarray:
-    global x_pwm, y_pwm, found, found_time, auto_mode
+    global x_pwm, y_pwm, found, found_time, auto_mode, lost_time, lost
     # fc.set_servo_pulse(fc.SERVO1, 2000)
     # fc.set_servo_degree(1, 135)
     f, dx, dy = find_red_area(img)
     if not f:
         dx = 0
         dy = 0
-        if auto_mode or found:
+        if not lost:
+            lost = True
+            lost_time = time.perf_counter()
+        if auto_mode:
+            auto_mode = False
             pid_x.set_auto_mode(False)
             pid_y.set_auto_mode(False)
+        if lost and time.perf_counter() - lost_time > 2:
+            lost = False
+            found = False
             auto_mode = False
+            pid_x.set_auto_mode(False)
+            pid_y.set_auto_mode(False)
             fc.set_two_servo_pulse(round(1180), round(1900))  # 1900
             fc.set_laser(False)
-            found = False
+            pid_y.setpoint = y_sta
     else:
+        lost = False
         if not auto_mode:
             pid_x.set_auto_mode(True, last_output=0)
             pid_y.set_auto_mode(True, last_output=0)
@@ -77,6 +94,9 @@ def process(img: np.ndarray) -> np.ndarray:
         if (not found) and abs(dx - pid_x.setpoint) < 5 and abs(dy - pid_y.setpoint) < 5:
             found = True
             found_time = time.perf_counter()
+            sp = y_sta + dy * (y_pwm - y_base)
+            pid_y.setpoint = max(y_limit[0], min(y_limit[1], sp))
+            fc.set_laser(True)
         out_x = pid_x(dx)
         x_pwm += out_x  # type: ignore
         x_pwm = max(pwm_x_limit[0], min(pwm_x_limit[1], x_pwm))
@@ -85,7 +105,6 @@ def process(img: np.ndarray) -> np.ndarray:
         y_pwm = max(pwm_y_limit[0], min(pwm_y_limit[1], y_pwm))
         fc.set_two_servo_pulse(round(x_pwm), round(y_pwm))  # 1900
         print(found, dx, dy, x_pwm, y_pwm)
-        fc.set_laser(True)
     return img
 
 

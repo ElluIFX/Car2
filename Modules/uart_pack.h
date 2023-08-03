@@ -115,6 +115,7 @@ extern int printft(UART_HandleTypeDef *huart, char *fmt, ...);
 extern void printft_flush(UART_HandleTypeDef *huart);
 extern void print_hex(const char *text, uint8_t *data, uint16_t len);
 extern void Uart_Send(UART_HandleTypeDef *huart, uint8_t *data, uint16_t len);
+extern void Uart_Send_Buffered(UART_HandleTypeDef *huart, uint8_t *data, uint16_t len);
 extern void Uart_Putchar(UART_HandleTypeDef *huart, uint8_t data);
 extern void Uart_Puts(UART_HandleTypeDef *huart, char *str);
 extern int Uart_Getchar(UART_HandleTypeDef *huart);

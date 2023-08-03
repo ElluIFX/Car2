@@ -14,9 +14,6 @@
 #include "macro.h"
 #include "main.h"
 
-#define USER_DATA_EXCHANGE_TIMEOUT_S (0.02f - 0.001f)
-#define USER_HEARTBEAT_TIMEOUT_S (1.0f - 0.001f)
-
 // 事件代码
 #define USER_EVENT_KEY_SHORT 0x01
 #define USER_EVENT_KEY_LONG 0x02

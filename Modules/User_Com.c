@@ -238,24 +238,23 @@ uint16_t data_exchange_cnt = 0;
 /**
  * @brief 用户通讯持续性任务，在调度器中调用
  */
-void UserCom_Task(void) {
-  float dT_s = 0.005f;
-  if (user_connected) {
-    // 心跳超时检查
-    user_heartbeat_cnt++;
-    if (user_heartbeat_cnt * dT_s >= USER_HEARTBEAT_TIMEOUT_S) {
-      user_connected = 0;
-    }
+void UserCom_Task(void) {  // 1ms
+  if (!user_connected) return;
+  // 心跳超时检查
+  user_heartbeat_cnt++;
+  if (user_heartbeat_cnt >= 1000) {  // 1s
+    user_connected = 0;
+    return;
+  }
 
-    // ACK发送检查
-    UserCom_CheckAck();
+  // ACK发送检查
+  if (user_ack_cnt) UserCom_CheckAck();
 
-    // 数据交换
-    data_exchange_cnt++;
-    if (data_exchange_cnt * dT_s >= USER_DATA_EXCHANGE_TIMEOUT_S) {
-      data_exchange_cnt = 0;
-      UserCom_DataExchange();
-    }
+  // 数据交换
+  data_exchange_cnt++;
+  if (data_exchange_cnt >= 25) {  // 25ms
+    data_exchange_cnt = 0;
+    UserCom_DataExchange();
   }
 }
 
@@ -333,13 +332,11 @@ void UserCom_SendEvent(u8 event, u8 op) {
   UserCom_SendData(data_to_send, 7);
 }
 
-uint8_t final_buf[256] = {0};
 /**
  * @brief 用户通讯数据发送
  */
 void UserCom_SendData(u8* dataToSend, u8 Length) {
-  memcpy(final_buf, dataToSend, Length);
-  Uart_Send(&huart2, final_buf, Length);
+  Uart_Send_Buffered(&huart2, dataToSend, Length);
 }
 
 #define STRLENMAX 100

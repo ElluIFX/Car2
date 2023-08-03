@@ -81,7 +81,7 @@ from map_ui import Ui_MainWindow
 
 map_img = cv2.imread(os.path.join(PATH, "map1.jpg"))
 fc = FC_Controller()
-fc.start_listen_serial("COM3", print_state=True)
+fc.start_listen_serial("COM1", print_state=True)
 
 
 def set_color(widget, rgb):
@@ -232,6 +232,7 @@ class MissionThread(QObject):
 
     def run(self):
         logger.info("Mission Thread Started")
+        
 
     def takeoff(self):
         self.takeoff_flag = True
@@ -252,7 +253,7 @@ if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)  # type: ignore
-    app.setStyleSheet(qdarktheme.load_stylesheet(theme="dark"))
+    app.setStyleSheet(qdarktheme.load_stylesheet(theme="light"))
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

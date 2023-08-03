@@ -103,6 +103,24 @@ void Uart_Send(UART_HandleTypeDef *huart, uint8_t *data, uint16_t len) {
   }
 }
 
+void Uart_Send_Buffered(UART_HandleTypeDef *huart, uint8_t *data,
+                        uint16_t len) {
+  if (len > 0) {
+    uint8_t *sendBuffP = (uint8_t*)get_buffer();
+    memcpy(sendBuffP, data, len);
+    while (_UART_NOT_READY) {  // 检查串口是否打开
+      __NOP();
+    }
+#if _PRINT_USE_DMA & _ENABLE_UART_DMA
+    HAL_UART_Transmit_DMA(huart, sendBuffP, len);
+#elif _PRINT_USE_IT
+    HAL_UART_Transmit_IT(huart, sendBuffP, len);
+#else
+    HAL_UART_Transmit(huart, sendBuffP, len, 0xFFFF);
+#endif
+  }
+}
+
 void Uart_Putchar(UART_HandleTypeDef *huart, uint8_t data) {
   while (_UART_NOT_READY) {  // 检查串口是否打开
     __NOP();
