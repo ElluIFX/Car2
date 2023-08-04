@@ -1,6 +1,5 @@
 import os
 import time
-from turtle import st
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
@@ -60,7 +59,9 @@ def update_state():
 update_steer_and_speed(0, 0)
 update_state()
 for steer, acc in mpst.iter_output():
-    update_steer_and_speed(steer, acc)
+    update_steer_and_speed(steer, mpst.a_to_v(acc))
     logger.debug(f"steer: {steer}, acc: {acc}")
     time.sleep(0.05)
     update_state()
+update_steer_and_speed(0, 0)
+fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.BREAK)

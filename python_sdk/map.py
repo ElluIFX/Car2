@@ -244,7 +244,6 @@ class MissionThread(QObject):
         self.start_event.wait()
         logger.info(f"Mission start, goto {self.fire_x}, {self.fire_y}")
 
-
     def takeoff(self):
         self.takeoff_flag = True
 
@@ -258,8 +257,8 @@ class MissionThread(QObject):
         else:
             self.takeoff_flag = False
         if f:
-            self.fire_x = firex
-            self.fire_y = firey
+            self.fire_x = -firey / 100 + 3.5
+            self.fire_y = firex / 100 + 3.5
             self.start_event.set()
 
 
