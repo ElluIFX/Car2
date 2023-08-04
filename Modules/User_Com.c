@@ -220,7 +220,7 @@ void UserCom_DataAnl(u8* data_buf, u16 data_len) {
       u32_temp = (*p_u32);
       if (u32_temp > 20000) u32_temp = 20000;
       __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, u32_temp);
-    case 0x10: // set motor speed pid
+    case 0x10:  // set motor speed pid
       p_float = (float*)(p_data + 1);
       if (p_data[0] & 0x01) {
         motor_l.spdPID.proportion = *p_float;
@@ -233,7 +233,7 @@ void UserCom_DataAnl(u8* data_buf, u16 data_len) {
         motor_r.spdPID.derivative = *(p_float + 2);
       }
       break;
-    case 0x11: // set motor pos pid
+    case 0x11:  // set motor pos pid
       p_float = (float*)(p_data + 1);
       if (p_data[0] & 0x01) {
         motor_l.posPID.proportion = *p_float;
@@ -245,7 +245,7 @@ void UserCom_DataAnl(u8* data_buf, u16 data_len) {
         motor_r.posPID.integral = *(p_float + 1);
         motor_r.posPID.derivative = *(p_float + 2);
       }
-    case 0x12: // set steer + speed
+    case 0x12:  // set steer + speed
       p_u32 = (uint32_t*)(p_data);
       u32_temp = (*p_u32);
       if (u32_temp > 20000) u32_temp = 20000;
@@ -253,6 +253,15 @@ void UserCom_DataAnl(u8* data_buf, u16 data_len) {
       p_float = (float*)(p_data + 4);
       motor_l.spdPID.setPoint = *p_float;
       motor_r.spdPID.setPoint = *p_float;
+      break;
+    case 0x13:  // set steer + speed
+      p_u32 = (uint32_t*)(p_data);
+      u32_temp = (*p_u32);
+      if (u32_temp > 20000) u32_temp = 20000;
+      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, u32_temp);
+      p_float = (float*)(p_data + 4);
+      motor_l.spdPID.setPoint = *p_float;
+      motor_r.spdPID.setPoint = *(p_float + 1);
       break;
     default:
       break;
