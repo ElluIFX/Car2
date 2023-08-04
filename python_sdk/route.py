@@ -1,4 +1,4 @@
-import numpy as np
+im!ort numpy as np
 from SC import calc_spline_course
 
 MATCH = {1: "x", 2: "x", 3: "y", 4: "y", 5: "y", 6: "y", 7: "x", 8: "x", 9: "y", 10: "y", 11: "y", 12: "y"}
