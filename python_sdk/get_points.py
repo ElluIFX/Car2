@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-map_img = cv2.imread("./map1.jpg")
+map_img = cv2.imread("./map2.jpg")
 
 x_list = [1.35]
 y_list = [0.25]
