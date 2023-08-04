@@ -105,7 +105,7 @@ time.sleep(2)
 calibrate()
 
 dl = 0.1
-target_speed = 0.2
+target_speed = 0.22
 
 
 def update_state(mpst, vel=None):
@@ -120,8 +120,8 @@ DT = 0.1
 
 from route import get_route
 
-x = 1.3
-y = 3.2
+x = 1.1
+y = 2.8
 enter_p, leave_p, side = get_route(x, y, dl=dl)
 try:
     last_update = time.perf_counter()
@@ -130,6 +130,7 @@ try:
     x, y, yaw = get_xyyaw_relative()
     initial_state = State(x, y, yaw, 0)
     mpst = Controller(cx, cy, cyaw, ck, target_speed, dl, initial_state)
+    fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.SPD_CTRL)
     update_state(mpst)
     for steer, acc in mpst.iter_output():
         vel = mpst.get_speed()
@@ -143,6 +144,8 @@ try:
     update_steer_and_speed(0, 0)
     fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.BREAK)
     detector.x_base = getattr(detector, f"x_base_{side}")
+    detector.go_to_base()
+    time.sleep(1)
     detector.process()
     detector.x_base = detector.x_base_m
     detector.go_to_base()
@@ -153,6 +156,7 @@ try:
     x, y, yaw = get_xyyaw_relative()
     initial_state = State(x, y, yaw, 0)
     mpst = Controller(cx, cy, cyaw, ck, target_speed, dl, initial_state)
+    fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.SPD_CTRL)
     update_state(mpst)
     for steer, acc in mpst.iter_output():
         vel = mpst.get_speed()

@@ -28,7 +28,6 @@ def get_id(x, y):
     for key, value in Y.items():
         for i in value[0 if y >= key else 1]:
             possible[i - 1] += 1
-    print(possible)
     return np.argmax(possible) + 1
 
 
@@ -65,8 +64,6 @@ leave_routes = {
         [0.6, 0.3216, 0.288, 0.2976, 0.2976, 0.6911999999999999, 1.0655999999999999, 1.3344],
         [
             3.643802647412756,
-            3.6726835138387486,
-            3.643802647412756,
             3.4320096269554754,
             3.210589651022864,
             1.3333333333333333,
@@ -85,6 +82,7 @@ leave_routes = {
 
 def get_route(x, y, dl=0.1):
     id = get_id(x, y)
+    print(f"ID: {id}")
     enter = enter_routes[id]
     leave = leave_routes[id]
     enter_params = [[], [], [], []]
@@ -94,11 +92,11 @@ def get_route(x, y, dl=0.1):
     m = MATCH[id]
     if m == "x":
         first_state = x < cx[split_idx]
-        while (not first_state) == (x < cx[split_idx]):
+        while (first_state) == (x < cx[split_idx]):
             split_idx -= 1
     else:
         first_state = y < cy[split_idx]
-        while (not first_state) == (y < cy[split_idx]):
+        while (first_state) == (y < cy[split_idx]):
             split_idx -= 1
     enter_params[0].extend(cx[:split_idx])
     enter_params[1].extend(cy[:split_idx])

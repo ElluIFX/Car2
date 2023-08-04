@@ -16,7 +16,7 @@ class Detector:
     x_base_l = 1850.0
     x_base_r = 500.0
 
-    pwm_x_limit = (500, 2500)
+    pwm_x_limit = (500, 2200)
     pwm_y_limit = (1500, 2500)
 
     x_random_range = 10
@@ -147,8 +147,8 @@ if __name__ == "__main__":
     #     fc.set_two_servo_pulse(pulse,1900)
     try:
         detector = Detector(fc)
-        detector.x_base = detector.x_base_l
-        detector.process()
+        # detector.x_base = detector.x_base_l
+        # detector.process()
         detector.x_base = detector.x_base_m
         detector.go_to_base()
     except KeyboardInterrupt:
