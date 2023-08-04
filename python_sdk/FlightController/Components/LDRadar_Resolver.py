@@ -486,49 +486,59 @@ class Map_Circle(object):
             cv2.circle(img, (int(pos[0]), int(pos[1])), add_points_size, add_points_color, -1)
         return img
 
-    def output_cloud(self, scale: float = 0.1, size=800) -> np.ndarray:
+    def output_cloud(self, scale: float = 0.1, size=800, rot_angle=0) -> np.ndarray:
         """
         输出点云图
         """
         black_img = np.zeros((size, size, 1), dtype=np.uint8)
-        select = self.data != -1
+        if rot_angle == 0:
+            data = self.data
+        else:
+            angle = round(rot_angle * self.ACC)
+            data = np.roll(self.data, angle)
+        select = data != -1
         points_pos = (
-            np.array([self.data[select] * self._sin_arr[select], -self.data[select] * self._cos_arr[select]]) * scale
-            + size // 2
+            np.array([data[select] * self._sin_arr[select], -data[select] * self._cos_arr[select]]) * scale + size // 2
         )
         select = np.logical_and(points_pos >= 0, points_pos < size)
         points_pos = points_pos[:, np.all(select, axis=0)]
         black_img[points_pos[1].astype(int), points_pos[0].astype(int)] = 255
         return black_img
 
-    def output_points(self, scale: float = 0.1, remove_unavil=True) -> np.ndarray:
+    def output_points(self, scale: float = 0.1, remove_unavil=True, rot_angle=0) -> np.ndarray:
         """
         输出点云坐标
         remove_unavil: 是否移除无效点
         """
-        if remove_unavil:
-            select = self.data != -1
-            points_pos = (
-                np.array([self.data[select] * self._cos_arr[select], -self.data[select] * self._sin_arr[select]])
-                * scale
-            )
+        if rot_angle == 0:
+            data = self.data
         else:
-            points_pos = np.array([self.data * self._cos_arr, -self.data * self._sin_arr]) * scale
+            angle = round(rot_angle * self.ACC)
+            data = np.roll(self.data, angle)
+        if remove_unavil:
+            select = data != -1
+            points_pos = np.array([data[select] * self._cos_arr[select], -data[select] * self._sin_arr[select]]) * scale
+        else:
+            points_pos = np.array([data * self._cos_arr, -data * self._sin_arr]) * scale
         return points_pos
 
     def output_polyline_cloud(
-        self, scale: float = 0.1, size=800, thickness=1, draw_outside=True, boundary=None
+        self, scale: float = 0.1, size=800, thickness=1, draw_outside=True, boundary=None, rot_angle=0
     ) -> np.ndarray:
         """
         输出多边形点云图
         """
         black_img = np.zeros((size, size, 1), dtype=np.uint8)
+        if rot_angle == 0:
+            data = self.data
+        else:
+            angle = round(rot_angle * self.ACC)
+            data = np.roll(self.data, angle)
         select = self.data != -1
         if boundary is not None:
-            select = np.logical_and(select, self.data < boundary)
+            select = np.logical_and(select, data < boundary)
         points_pos = (
-            np.array([self.data[select] * self._sin_arr[select], -self.data[select] * self._cos_arr[select]]) * scale
-            + size // 2
+            np.array([data[select] * self._sin_arr[select], -data[select] * self._cos_arr[select]]) * scale + size // 2
         )
         if not draw_outside:
             points_pos = points_pos[:, np.all(np.logical_and(points_pos >= 0, points_pos < size), axis=0)]
