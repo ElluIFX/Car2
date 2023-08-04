@@ -1,7 +1,11 @@
 import os
 import sys
 
-from PyQt5 import QtGui
+from PyQt5.QtCore import QLibraryInfo
+
+os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = QLibraryInfo.location(QLibraryInfo.PluginsPath)
+
+"""Fix error"""
 
 sys.path.append(os.path.dirname(__file__))
 PATH = os.path.dirname(os.path.abspath(__file__))
@@ -82,10 +86,10 @@ from map_ui import Ui_MainWindow
 
 map_img = cv2.imread(os.path.join(PATH, "map1.jpg"))
 fc = FC_Controller()
-fc.start_listen_serial("COM1", print_state=True)
-radar = LD_Radar()
-radar.start()
-radar.start_resolve_pose()
+# fc.start_listen_serial("COM1", print_state=True)
+# radar = LD_Radar()
+# radar.start()
+# radar.start_resolve_pose()
 
 
 def set_color(widget, rgb):
@@ -239,7 +243,7 @@ class MissionThread(QObject):
         logger.info("Mission Thread Started")
         self.start_event.wait()
         logger.info(f"Mission start, goto {self.fire_x}, {self.fire_y}")
-        
+
 
     def takeoff(self):
         self.takeoff_flag = True
