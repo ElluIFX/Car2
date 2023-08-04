@@ -6,8 +6,8 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-x", "--x", type=float, default=0.0)
-parser.add_argument("-y", "--y", type=float, default=0.0)
+parser.add_argument("-x", "--x", type=float, required=True)
+parser.add_argument("-y", "--y", type=float, required=True)
 
 args = parser.parse_args()
 x = args.x
