@@ -356,12 +356,14 @@ def get_route(x, y, dl=0.1):
     m = MATCH[id]
     if m == "x":
         first_state = x < cx[split_idx]
-        while (first_state) == (x < cx[split_idx]):
+        while (first_state) == (x < cx[split_idx]) and split_idx > 0:
             split_idx -= 1
     else:
         first_state = y < cy[split_idx]
-        while (first_state) == (y < cy[split_idx]):
+        while (first_state) == (y < cy[split_idx]) and split_idx > 0:
             split_idx -= 1
+    if split_idx == 0:
+        split_idx = len(cx) - 1
     enter_params[0].extend(cx[:split_idx])
     enter_params[1].extend(cy[:split_idx])
     enter_params[2].extend(cyaw[:split_idx])
