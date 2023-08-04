@@ -23,7 +23,6 @@ fc.start_listen_serial("/dev/ttyS6", print_state=False, block_until_connected=Tr
 fc.wait_for_connection()
 fc.motor_reset(fc.MOTOR_L | fc.MOTOR_R)
 fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.SPD_CTRL)
-fc.set_two_servo_pulse(1500, 1500)
 radar = LD_Radar()
 radar.debug = False
 radar.start(subtask_skip=4)
@@ -105,7 +104,7 @@ time.sleep(2)
 calibrate()
 
 dl = 0.1
-target_speed = 0.22
+target_speed = 0.24
 
 
 def update_state(mpst, vel=None):
@@ -120,8 +119,8 @@ DT = 0.1
 
 from route import get_route
 
-x = 1.1
-y = 2.8
+x = 4.3
+y = 1.2
 enter_p, leave_p, side = get_route(x, y, dl=dl)
 try:
     last_update = time.perf_counter()

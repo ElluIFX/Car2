@@ -21,7 +21,7 @@ class Detector:
 
     x_random_range = 10
     y_random_range = 4
-    max_random_add = 30
+    max_random_add = 35
     found = False
     found_time = 0.0
     lost_time = 0.0
@@ -29,8 +29,8 @@ class Detector:
     lost = False
 
     y_base = 1900
-    y_sta = 10
-    y_k = 0.1
+    y_sta = 13
+    y_k = 0.15
     y_limit = (-20, 20)
 
     x_base = x_base_m
@@ -61,6 +61,8 @@ class Detector:
         fc.set_laser(False)
 
     def go_to_base(self):
+        self.x_pwm = self.x_base
+        self.y_pwm = self.y_base
         self.fc.set_two_servo_pulse(round(self.x_base), round(self.y_base))
 
     def process(self, loop=False):
@@ -103,7 +105,7 @@ class Detector:
                     random_add = min(random_add, self.max_random_add)
                     # dx += random.randint(-x_random_range - random_add, x_random_range + random_add)
                     # dy += random.randint(-y_random_range, y_random_range)
-                    dx += math.sin(time.perf_counter() * 10) * (
+                    dx += math.sin(time.perf_counter() * 15) * (
                         self.x_random_range + random_add
                     )
                     dy += math.sin(time.perf_counter() * 2) * (
