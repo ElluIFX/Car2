@@ -141,8 +141,14 @@ class FC_Protocol(FC_Base_Uart_Comunication):
         """
         self.send_data_to_fc(struct.pack("<Bfff", motor, p, i, d), 0x11)
 
-    def set_steer_and_speed(self, pulse: float, speed: float):
+    def set_steer_and_speed(self, pulse: int, speed: float):
         """
         设置转向舵机和后轮速度
         """
-        self.send_data_to_fc(struct.pack("<If", round(pulse), round(speed)), 0x12)
+        self.send_data_to_fc(struct.pack("<If", round(pulse), speed), 0x12)
+
+    def set_steer_and_two_speed(self, pulse: int, speed_l: float, speed_r: float):
+        """
+        设置转向舵机和后轮速度
+        """
+        self.send_data_to_fc(struct.pack("<Iff", round(pulse), speed_l, speed_r), 0x13)

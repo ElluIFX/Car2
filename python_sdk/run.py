@@ -16,35 +16,58 @@ fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.SPD_CTRL)
 fc.set_two_servo_pulse(1500, 1500)
 radar = LD_Radar()
 radar.debug = False
-radar.start(subtask_skip=8)
-radar.start_resolve_pose(1000, 0.8, 0.8, rotation_adapt=True)
+radar.start(subtask_skip=4)
+radar.start_resolve_pose(800, 0.7, 0.3, rotation_adapt=True)
 
 base_x = 0
 base_y = 0
 
 pulse_list = [1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300]
 deg_list = [35, 31, 24, 16, 7, 0, -6, -9, -13, -19, -20.5, -22, -23.7, -24]
-rad_list = [np.deg2rad(deg) for deg in deg_list]
+rad_list = np.deg2rad(deg_list)
+max_angle_r = deg_list[0]
+max_angle_l = deg_list[-1]
+max_angle_r_rad = rad_list[0]
+max_angle_l_rad = rad_list[-1]
 
-
-def get_pulse_from_rad(rad):
-    if rad <= rad_list[0]:
+def get_pulse_from_deg(deg):
+    if deg >= deg_list[0]:
         return pulse_list[0]
-    if rad >= rad_list[-1]:
+    if deg <= deg_list[-1]:
         return pulse_list[-1]
-    for i in range(len(rad_list) - 1):
-        if rad_list[i + 1] >= rad >= rad_list[i]:
-            return pulse_list[i] + (rad - rad_list[i]) / (rad_list[i + 1] - rad_list[i]) * (
-                pulse_list[i + 1] - pulse_list[i]
-            )
+    for i in range(len(deg_list) - 1):
+        if deg_list[i + 1] <= deg <= deg_list[i]:
+            return np.interp(deg, [deg_list[i + 1], deg_list[i]], [pulse_list[i + 1], pulse_list[i]])
 
+def motor_lr(vx: float, vz: float):
+    Axle_spacing = 0.146   # 小车前后轴轴距 单位：m
+    Wheel_spacing = 0.163  # 主动轮轮距 单位：m
+
+    # 对于阿克曼小车vz代表右前轮转向角度
+    R = Axle_spacing / np.tan(vz) - 0.5 * Wheel_spacing
+    # 转弯半径 单位：m
+    # 前轮转向角度限幅(舵机控制前轮转向角度)，单位：rad
+    if vz > max_angle_r_rad:
+        vz = max_angle_r_rad
+    elif vz < max_angle_l_rad:
+        vz =max_angle_l_rad
+    # 运动学逆解
+    if vz != 0:
+        vl = vx * (R - 0.5 * Wheel_spacing) / R
+        vr = vx * (R + 0.5 * Wheel_spacing) / R
+    else:
+        vl = vx
+        vr = vx
+    return vl, vr
 
 def update_steer_and_speed(steer_rad: float, speed_mps: float):
     WHEEL_PERIMETER = 0.21049
-    rpm = speed_mps / WHEEL_PERIMETER * 60
-    steer_rad = np.clip(steer_rad, -MAX_STEER, MAX_STEER)
-    pulse = get_pulse_from_rad(steer_rad)
-    fc.set_steer_and_speed(pulse, rpm)
+    rpm = lambda speed_mps: speed_mps / WHEEL_PERIMETER * 60
+    steer_deg = np.rad2deg(-steer_rad)
+    pulse = get_pulse_from_deg(steer_deg)
+    # fc.set_steer_and_speed(pulse, rpm(speed_mps))
+    speed_l, speed_r = motor_lr(speed_mps, steer_rad)
+    fc.set_steer_and_two_speed(pulse, rpm(speed_l), rpm(speed_r))
 
 
 def get_xy_yaw():
@@ -68,8 +91,8 @@ update_steer_and_speed(0, 0)
 time.sleep(2)
 calibrate()
 
-dl = 0.02
-target_speed = 0.2
+dl = 0.05
+target_speed = 0.3
 cx, cy, cyaw, ck = get_map_course(dl)
 x, y, yaw = get_xyyaw_relative()
 initial_state = State(x, y, yaw, 0)
@@ -91,10 +114,10 @@ try:
         vel = mpst.a_to_v(acc, vel)
         update_steer_and_speed(steer, vel)
         logger.debug(f"steer: {steer}, acc: {acc}, vel: {vel}")
-        while time.perf_counter() - last_update < DT:
-            time.sleep(0.01)
-        last_update += DT
-        update_state(vel=vel)
+        # while time.perf_counter() - last_update < DT:
+        time.sleep(0.02)
+        last_update = time.perf_counter()
+        update_state()
     update_steer_and_speed(0, 0)
     fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.BREAK)
 except KeyboardInterrupt:

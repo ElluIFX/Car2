@@ -17,6 +17,47 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+
+
+NX = 4  # x = x, y, v, yaw
+NU = 2  # a = [accel, steer]
+T = 5  # horizon length
+
+# mpc parameters
+R = np.diag([0.01, 0.01])  # input cost matrix
+Rd = np.diag([0.01, 1.0])  # input difference cost matrix
+Q = np.diag([1.0, 1.0, 0.5, 0.5])  # state cost matrix
+Qf = Q  # state final matrix
+GOAL_DIS = 0.5  # goal distance
+STOP_SPEED = 0.2  # stop speed
+MAX_TIME = 500.0  # max simulation time
+
+# iterative paramter
+MAX_ITER = 2  # Max iteration
+DU_TH = 0.1  # iteration finish param
+
+TARGET_SPEED = 0.3  # [m/s] target speed
+N_IND_SEARCH = 18  # Search index number
+
+DT = 0.18  # [s] time tick
+
+# Vehicle parameters
+LENGTH = 4.5 / 10  # [m]
+WIDTH = 2.0 / 10  # [m]
+BACKTOWHEEL = 1.0 / 10  # [m]
+WHEEL_LEN = 0.3 / 10  # [m]
+WHEEL_WIDTH = 0.2 / 10  # [m]
+TREAD = 0.7 / 10  # [m]
+WB = 0.163  # [m]
+
+MAX_STEER = np.deg2rad(22.0)  # maximum steering angle [rad]
+MAX_DSTEER = np.deg2rad(22.0)  # maximum steering speed [rad/s]
+MAX_SPEED = 0.8  # maximum speed [m/s]
+MIN_SPEED = -0.6  # minimum speed [m/s]
+MAX_ACCEL = 0.1  # maximum accel [m/ss]
+
+show_animation = True
+
 class CubicSpline1D:
     """
     1D Cubic Spline class
@@ -325,46 +366,6 @@ def calc_spline_course(x, y, ds=0.1):
         rk.append(sp.calc_curvature(i_s))
 
     return rx, ry, ryaw, rk, s
-
-
-NX = 4  # x = x, y, v, yaw
-NU = 2  # a = [accel, steer]
-T = 5  # horizon length
-
-# mpc parameters
-R = np.diag([0.01, 0.01])  # input cost matrix
-Rd = np.diag([0.01, 1.0])  # input difference cost matrix
-Q = np.diag([1.0, 1.0, 0.5, 0.5])  # state cost matrix
-Qf = Q  # state final matrix
-GOAL_DIS = 1.5  # goal distance
-STOP_SPEED = 0.05  # stop speed
-MAX_TIME = 500.0  # max simulation time
-
-# iterative paramter
-MAX_ITER = 3  # Max iteration
-DU_TH = 0.1  # iteration finish param
-
-TARGET_SPEED = 0.2  # [m/s] target speed
-N_IND_SEARCH = 10  # Search index number
-
-DT = 0.2  # [s] time tick
-
-# Vehicle parameters
-LENGTH = 4.5 / 10  # [m]
-WIDTH = 2.0 / 10  # [m]
-BACKTOWHEEL = 1.0 / 10  # [m]
-WHEEL_LEN = 0.3 / 10  # [m]
-WHEEL_WIDTH = 0.2 / 10  # [m]
-TREAD = 0.7 / 10  # [m]
-WB = 0.163  # [m]
-
-MAX_STEER = np.deg2rad(27.0)  # maximum steering angle [rad]
-MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
-MAX_SPEED = 2  # maximum speed [m/s]
-MIN_SPEED = -2  # minimum speed [m/s]
-MAX_ACCEL = 1  # maximum accel [m/ss]
-
-show_animation = False
 
 
 class State:
@@ -754,7 +755,7 @@ def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state):
             plt.axis("equal")
             plt.grid(True)
             plt.title("Time[s]:" + str(round(time, 2)) + ", speed[km/h]:" + str(round(state.v * 3.6, 2)))
-            plt.pause(0.0001)
+            plt.savefig("mpst.png")
 
     return t, x, y, yaw, v, d, a
 
@@ -823,10 +824,13 @@ class Controller(object):
                 self.state, self.cx, self.cy, self.cyaw, self.ck, self.sp, self.dl, self.target_ind
             )
             x0 = [self.state.x, self.state.y, self.state.v, self.state.yaw]  # current state
-            self.oa, self.odelta, ox, oy, oyaw, ov = iterative_linear_mpc_control(xref, x0, dref, self.oa, self.odelta)
             di, ai = 0.0, 0.0
-            if self.odelta is not None:
-                di, ai = self.odelta[0], self.oa[0]
+            try:
+                self.oa, self.odelta, ox, oy, oyaw, ov = iterative_linear_mpc_control(xref, x0, dref, self.oa, self.odelta)
+                if self.odelta is not None:
+                    di, ai = self.odelta[0], self.oa[0]
+            except Exception as e:
+                pass
             self.time = self.time + DT
 
             x.append(self.state.x)
@@ -905,7 +909,7 @@ def smooth_yaw(yaw):
 
 def get_map_course(dl):
     ax = [1.35, 1.7, 1.7, 1.7, 2.3, 2.6, 4]
-    ay = [0.25, 1.1, 1.6, 1.9, 2.3, 2.3, 2.3]
+    ay = [0.25, 1.1, 1.6, 1.9, 2.3+0.05, 2.3+0.05, 2.3+0.05]
     cx, cy, cyaw, ck, s = calc_spline_course(ax, ay, ds=dl)
     ax = ax[::-1]
     ay = ay[::-1]
@@ -927,24 +931,6 @@ def main():
     initial_state = State(x=cx[0], y=cy[0], yaw=cyaw[0], v=0.0)
 
     t, x, y, yaw, v, d, a = do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state)
-    if show_animation:  # pragma: no cover
-        plt.close("all")
-        plt.subplots()
-        plt.plot(cx, cy, "-r", label="spline")
-        plt.plot(x, y, "-g", label="tracking")
-        plt.grid(True)
-        plt.axis("equal")
-        plt.xlabel("x[m]")
-        plt.ylabel("y[m]")
-        plt.legend()
-
-        plt.subplots()
-        plt.plot(t, v, "-r", label="speed")
-        plt.grid(True)
-        plt.xlabel("Time [s]")
-        plt.ylabel("Speed [kmh]")
-
-        plt.show()
 
 
 if __name__ == "__main__":
