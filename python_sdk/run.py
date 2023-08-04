@@ -7,7 +7,7 @@ from FlightController import FC_Controller
 from FlightController.Components import LD_Radar
 from loguru import logger
 from SC import Controller, State, get_map_course,get_map_course_2,get_map_course_3
-
+from fire_vision import Detector
 speed = 0.0
 
 def callback(state):
@@ -25,7 +25,7 @@ radar = LD_Radar()
 radar.debug = False
 radar.start(subtask_skip=4)
 radar.start_resolve_pose(800, 0.7, 0.3, rotation_adapt=True)
-
+detector = Detector(fc)
 base_x = 0
 base_y = 0
 
@@ -99,7 +99,7 @@ time.sleep(2)
 calibrate()
 
 dl = 0.1
-target_speed = 0.3
+target_speed = 0.2
 
 
 def update_state(mpst,vel=None):
@@ -129,6 +129,10 @@ try:
 
     update_steer_and_speed(0, 0)
     fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.BREAK)
+    detector.x_base = detector.x_base_l
+    detector.process()
+    detector.x_base = detector.x_base_m
+    detector.go_to_base()
 except KeyboardInterrupt:
     update_steer_and_speed(0, 0)
     time.sleep(1)

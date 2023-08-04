@@ -97,10 +97,6 @@ class SerialReaderBuffered:
         self._read_start_bit = bytes(startBit)
         self._read_start_bit_sum = sum(self._read_start_bit) & 0xFF
         self._read_start_bit_length = len(self._read_start_bit)
-        try:
-            self._ser.set_buffer_size(rx_size=1024 * 1024)  # 1MB
-        except:
-            pass
 
     def read(self) -> bool:
         """

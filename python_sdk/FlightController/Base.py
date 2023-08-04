@@ -360,7 +360,7 @@ class FC_Base_Uart_Comunication(object):
                 try:
                     if serial_dev is None:
                         assert (serial_dev := get_fc_com())
-                    self._ser = serial.Serial(serial_dev, baudrate, timeout=0.5, write_timeout=0)
+                    self._ser = serial.Serial(serial_dev, baudrate, timeout=0.5)
                     break
                 except Exception as e:
                     logger.warning(f"[FC] Serial port open failed: {e}, retrying")

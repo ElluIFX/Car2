@@ -86,7 +86,7 @@ from map_ui import Ui_MainWindow
 
 map_img = cv2.imread(os.path.join(PATH, "map1.jpg"))
 fc = FC_Controller()
-# fc.start_listen_serial("COM1", print_state=True)
+fc.start_listen_serial("/dev/ttyS6", print_state=True)
 # radar = LD_Radar()
 # radar.start()
 # radar.start_resolve_pose()
@@ -248,18 +248,21 @@ class MissionThread(QObject):
         self.takeoff_flag = True
 
     def callback(self, data: bytes):
-        c, px, py, dist, f, firex, firey = struct.unpack("<BhhHBhh", data)
-        sig.set_position_signal.emit(-py / 100 + 3.5, px / 100 + 3.5, dist / 100)
-        if not c:
-            sig.reset_position_signal.emit()
-            if self.takeoff_flag:
-                fc.send_to_wireless(b"\x01")
-        else:
-            self.takeoff_flag = False
-        if f:
-            self.fire_x = -firey / 100 + 3.5
-            self.fire_y = firex / 100 + 3.5
-            self.start_event.set()
+        try:
+            c, px, py, dist, f, firex, firey = struct.unpack("<BhhHBhh", data)
+            sig.set_position_signal.emit(-py / 100 + 3.5, px / 100 + 3.5, dist / 100)
+            if not c:
+                sig.reset_position_signal.emit()
+                if self.takeoff_flag:
+                    fc.send_to_wireless(b"\x01")
+            else:
+                self.takeoff_flag = False
+            if f:
+                self.fire_x = -firey / 100 + 3.5
+                self.fire_y = firex / 100 + 3.5
+                self.start_event.set()
+        except Exception as e:
+            logger.exception(e)
 
 
 if __name__ == "__main__":
