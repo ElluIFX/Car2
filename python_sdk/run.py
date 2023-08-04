@@ -121,8 +121,8 @@ from route import get_route
 
 x = 4.3
 y = 1.2
-enter_p, leave_p, side = get_route(x, y, dl=dl)
 try:
+    enter_p, leave_p, side = get_route(x, y, dl=dl)
     last_update = time.perf_counter()
     vel = target_speed
     cx, cy, cyaw, ck = enter_p
