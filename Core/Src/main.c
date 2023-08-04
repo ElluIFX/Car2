@@ -87,8 +87,8 @@ motor_t motor_l = {
     .spdPID =
         {
             .base = 0,
-            .proportion = 1.1,
-            .integral = 3.1,
+            .proportion = 0.4,
+            .integral = 4,
             .derivative = 0,
             .Ts = 0.01,
         },
@@ -114,8 +114,8 @@ motor_t motor_r = {
     .spdPID =
         {
             .base = 0,
-            .proportion = 1.1,
-            .integral = 3.1,
+            .proportion = 0.4,
+            .integral = 4,
             .derivative = 0,
             .Ts = 0.01,
         },
@@ -190,6 +190,7 @@ int main(void) {
   HAL_TIM_Base_Start_IT(&htim14);
   HAL_TIM_Base_Start_IT(&htim2);
   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, FORWARD_MIDVALUE);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, FORWARD_MIDVALUE);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
