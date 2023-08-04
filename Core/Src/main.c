@@ -34,6 +34,7 @@
 #include "log.h"
 #include "motor.h"
 #include "perf_counter.h"
+#include "pid.h"
 #include "scheduler.h"
 #include "stdlib.h"
 #include "uart_pack.h"
@@ -74,8 +75,61 @@ void Uart2_Callback(char *buf, uint16_t len);
 uart_dma_ctrl_t uart;
 uart_dma_ctrl_t uart2;
 
-motor_t motor_l = {};
-motor_t motor_r = {};
+motor_t motor_l = {
+    .timEncoder = &htim4,
+    .timPWM = &htim5,
+    .pwmChannel = TIM_CHANNEL_2,
+    .forwardGPIOx = B2_GPIO_Port,
+    .forwardGPIOpin = B2_Pin,
+    .reverseGPIOx = A2_GPIO_Port,
+    .reverseGPIOpin = A2_Pin,
+    .encoderReverse = 1,
+    .spdPID =
+        {
+            .base = 0,
+            .proportion = 1.1,
+            .integral = 3.1,
+            .derivative = 0,
+            .Ts = 0.01,
+        },
+    .posPID =
+        {
+            .base = 0,
+            .proportion = 3,
+            .integral = 0,
+            .derivative = 0.1,
+            .Ts = 0.01,
+        },
+};
+
+motor_t motor_r = {
+    .timEncoder = &htim1,
+    .timPWM = &htim5,
+    .pwmChannel = TIM_CHANNEL_1,
+    .forwardGPIOx = A1_GPIO_Port,
+    .forwardGPIOpin = A1_Pin,
+    .reverseGPIOx = B1_GPIO_Port,
+    .reverseGPIOpin = B1_Pin,
+    .encoderReverse = 0,
+    .spdPID =
+        {
+            .base = 0,
+            .proportion = 1.1,
+            .integral = 3.1,
+            .derivative = 0,
+            .Ts = 0.01,
+        },
+    .posPID =
+        {
+            .base = 0,
+            .proportion = 3,
+            .integral = 0,
+            .derivative = 0.1,
+            .Ts = 0.01,
+        },
+};
+
+const uint32_t FORWARD_MIDVALUE = 1400;
 
 /* USER CODE END 0 */
 
@@ -83,9 +137,7 @@ motor_t motor_r = {};
  * @brief  The application entry point.
  * @retval int
  */
-int main(void)
-
-{
+int main(void) {
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -123,6 +175,8 @@ int main(void)
   Init_Module_Timebase();
   Uart_DMA_Init(&uart, &huart1, Uart_Callback, 1);
   Uart_DMA_Init(&uart2, &huart2, Uart2_Callback, 1);
+  Motor_Setup(&motor_l);
+  Motor_Setup(&motor_r);
   LED(0);
   LOG_ENDL();
   LOG_I("-- System Boot --");
@@ -135,6 +189,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   HAL_TIM_Base_Start_IT(&htim14);
   HAL_TIM_Base_Start_IT(&htim2);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, FORWARD_MIDVALUE);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
@@ -230,12 +285,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   if (htim->Instance == TIM14) {  // 1ms
     UserCom_Task();
     tim14_cnt++;
-    // Motor_Encoder_Tick(&motor_l, 1000.0f);
-    // Motor_Encoder_Tick(&motor_r, 1000.0f);
+    Motor_Encoder_Tick(&motor_l, 1000.0f);
+    Motor_Encoder_Tick(&motor_r, 1000.0f);
     if (tim14_cnt == 10) {  // 10ms
       tim14_cnt = 0;
-      // Motor_Run(&motor_l);
-      // Motor_Run(&motor_r);
+      Motor_Run(&motor_l);
+      Motor_Run(&motor_r);
     }
   }
 }

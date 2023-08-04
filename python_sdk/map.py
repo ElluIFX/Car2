@@ -76,12 +76,16 @@ import cv2
 import numpy as np
 import qdarktheme
 from FlightController import FC_Controller
+from FlightController.Components import LD_Radar
 from loguru import logger
 from map_ui import Ui_MainWindow
 
 map_img = cv2.imread(os.path.join(PATH, "map1.jpg"))
 fc = FC_Controller()
 fc.start_listen_serial("COM1", print_state=True)
+radar = LD_Radar()
+radar.start()
+radar.start_resolve_pose()
 
 
 def set_color(widget, rgb):
@@ -225,6 +229,7 @@ class MissionThread(QObject):
         self.takeoff_flag = False
         sig.takeoff_signal.connect(self.takeoff)
         fc.register_wireless_callback(self.callback)
+        self.start_event = Event()
 
     def show_image(self, image: np.ndarray):
         self._image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -232,13 +237,14 @@ class MissionThread(QObject):
 
     def run(self):
         logger.info("Mission Thread Started")
+        self.start_event.wait()
+        logger.info(f"Mission start, goto {self.fire_x}, {self.fire_y}")
         
 
     def takeoff(self):
         self.takeoff_flag = True
 
     def callback(self, data: bytes):
-        # logger.debug(f"Received: {data}")
         c, px, py, dist, f, firex, firey = struct.unpack("<BhhHBhh", data)
         sig.set_position_signal.emit(-py / 100 + 3.5, px / 100 + 3.5, dist / 100)
         if not c:
@@ -247,6 +253,10 @@ class MissionThread(QObject):
                 fc.send_to_wireless(b"\x01")
         else:
             self.takeoff_flag = False
+        if f:
+            self.fire_x = firex
+            self.fire_y = firey
+            self.start_event.set()
 
 
 if __name__ == "__main__":

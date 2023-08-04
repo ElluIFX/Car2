@@ -23,7 +23,7 @@
 #define PULSE_PER_ROTATION \
   (ENCODER_RESOLUTION * SPEED_RATIO * ENCODER_MULTIPLE)  // 每圈编码器脉冲数
 #define WHEEL_PERIMETER 0.42097                          // 轮子周长（m）
-#define WHEEL_BASE 0.20                                  // 轮子轴距
+#define WHEEL_BASE 0.163                                  // 轮子轴距
 #define PULSE_PER_METER (PULSE_PER_ROTATION / WHEEL_PERIMETER)  // 每米脉冲数
 #define MOTOR_LAUNCH_PWM_DUTY 0  // 电机启动PWM占空比
 
@@ -54,6 +54,7 @@ typedef struct {  // 电机闭环控制结构体
   float posTargetSpd;             // 位置环目标速度
   float pwmDuty;                  // PWM占空比
   TIM_HandleTypeDef *timEncoder;  // 编码器定时器
+  uint8_t encoderReverse;         // 编码器反转
   TIM_HandleTypeDef *timPWM;      // PWM定时器
   uint32_t pwmChannel;            // PWM通道
   GPIO_TypeDef *forwardGPIOx;     // 正向GPIO

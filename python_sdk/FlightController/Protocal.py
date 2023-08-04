@@ -122,3 +122,27 @@ class FC_Protocol(FC_Base_Uart_Comunication):
         设置两个舵机脉宽 (us) (500us - 2500us)
         """
         self.send_data_to_fc(struct.pack("<II", pulse1, pulse2), 0x0E)
+
+    def set_steer_pulse(self, pulse: int):
+        """
+        设置舵机脉宽 (us) (500us - 2500us)
+        """
+        self.send_data_to_fc(struct.pack("<I", pulse), 0x0F)
+
+    def set_motor_speed_pid(self, motor: int, p: float, i: float, d: float):
+        """
+        设置电机速度环PID
+        """
+        self.send_data_to_fc(struct.pack("<Bfff", motor, p, i, d), 0x10)
+
+    def set_motor_pos_pid(self, motor: int, p: float, i: float, d: float):
+        """
+        设置电机位置环PID
+        """
+        self.send_data_to_fc(struct.pack("<Bfff", motor, p, i, d), 0x11)
+
+    def set_steer_and_speed(self, pulse: float, speed: float):
+        """
+        设置转向舵机和后轮速度
+        """
+        self.send_data_to_fc(struct.pack("<If", pulse, speed), 0x12)

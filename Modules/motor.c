@@ -40,6 +40,7 @@ void Motor_Setup(motor_t *motor) {
       (MOTOR_TIM_CLOCK_FREQ_HZ / MOTOR_PWM_PRECISION / MOTOR_PWM_FREQ) - 1);
   __HAL_TIM_SET_AUTORELOAD(motor->timPWM, MOTOR_PWM_PRECISION - 1);
   __HAL_TIM_SET_COMPARE(motor->timPWM, motor->pwmChannel, 0);
+  HAL_TIM_Base_Start(motor->timPWM);
   HAL_TIM_PWM_Start(motor->timPWM, motor->pwmChannel);
 }
 
@@ -50,8 +51,12 @@ void Motor_Setup(motor_t *motor) {
  */
 void Motor_Encoder_Tick(motor_t *motor, float runTimeHz) {
   float speed = 0;
-  motor->pos +=
-      (int32_t)__HAL_TIM_GET_COUNTER(motor->timEncoder) - ENCODER_MID_VALUE;
+  if (motor->encoderReverse)
+    motor->pos +=
+        (int32_t)__HAL_TIM_GET_COUNTER(motor->timEncoder) - ENCODER_MID_VALUE;
+  else
+    motor->pos -=
+        (int32_t)__HAL_TIM_GET_COUNTER(motor->timEncoder) - ENCODER_MID_VALUE;
   __HAL_TIM_SET_COUNTER(motor->timEncoder, ENCODER_MID_VALUE);
   speed = (float)(motor->pos - motor->lastPos) * 60.0 * runTimeHz /
           PULSE_PER_ROTATION;
@@ -72,16 +77,9 @@ void Motor_Run(motor_t *motor) {
   } else {
     PID_Reset_StartPoint(&motor->posPID, 0);
   }
-  if (motor->mode == MOTOR_MODE_BRAKE ||
-      EQUAL(motor->spdPID.setPoint, 0, 0.1)) {
+  if (motor->mode == MOTOR_MODE_BRAKE) {
     motor->pwmDuty = 0;
     PID_Reset_StartPoint(&motor->spdPID, 0);
-    __HAL_TIM_SET_COMPARE(motor->timPWM, motor->pwmChannel, 0);
-    HAL_GPIO_WritePin(motor->forwardGPIOx, motor->forwardGPIOpin,
-                      GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(motor->reverseGPIOx, motor->reverseGPIOpin,
-                      GPIO_PIN_RESET);
-    return;
   } else if (motor->mode == MOTOR_MODE_SLIDE) {
     motor->pwmDuty = 0;
     PID_Reset_StartPoint(&motor->spdPID, 0);
@@ -102,10 +100,16 @@ void Motor_Run(motor_t *motor) {
       pwmDuty = 0;
 #endif
   }
-  if (pwmDuty >= 0) {
+  if (pwmDuty > 0) {
     __HAL_TIM_SET_COMPARE(motor->timPWM, motor->pwmChannel,
                           pwmDuty * MOTOR_PWM_PRECISION / 100);
     HAL_GPIO_WritePin(motor->forwardGPIOx, motor->forwardGPIOpin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(motor->reverseGPIOx, motor->reverseGPIOpin,
+                      GPIO_PIN_RESET);
+  } else if (pwmDuty == 0) {
+    __HAL_TIM_SET_COMPARE(motor->timPWM, motor->pwmChannel, 0);
+    HAL_GPIO_WritePin(motor->forwardGPIOx, motor->forwardGPIOpin,
+                      GPIO_PIN_RESET);
     HAL_GPIO_WritePin(motor->reverseGPIOx, motor->reverseGPIOpin,
                       GPIO_PIN_RESET);
   } else {
