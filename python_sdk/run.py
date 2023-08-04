@@ -3,20 +3,23 @@ import time
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
+from fire_vision import Detector
 from FlightController import FC_Controller
 from FlightController.Components import LD_Radar
 from loguru import logger
-from SC import Controller, State, get_map_course,get_map_course_2,get_map_course_3
-from fire_vision import Detector
+from SC import Controller, State, get_map_course, get_map_course_2, get_map_course_3
+
 speed = 0.0
+
 
 def callback(state):
     global speed
     v = (state.motor_l_speed_mps.value + state.motor_r_speed_mps.value) / 2
     speed += (v - speed) * 0.1
 
+
 fc = FC_Controller()
-fc.start_listen_serial("/dev/ttyS6", print_state=False, block_until_connected=True,callback=callback)
+fc.start_listen_serial("/dev/ttyS6", print_state=False, block_until_connected=True, callback=callback)
 fc.wait_for_connection()
 fc.motor_reset(fc.MOTOR_L | fc.MOTOR_R)
 fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.SPD_CTRL)
@@ -37,6 +40,7 @@ max_angle_l = deg_list[-1]
 max_angle_r_rad = rad_list[0]
 max_angle_l_rad = rad_list[-1]
 
+
 def get_pulse_from_deg(deg):
     if deg >= deg_list[0]:
         return pulse_list[0]
@@ -46,8 +50,9 @@ def get_pulse_from_deg(deg):
         if deg_list[i + 1] <= deg <= deg_list[i]:
             return np.interp(deg, [deg_list[i + 1], deg_list[i]], [pulse_list[i + 1], pulse_list[i]])
 
+
 def motor_lr(vx: float, vz: float):
-    Axle_spacing = 0.146   # 小车前后轴轴距 单位：m
+    Axle_spacing = 0.146  # 小车前后轴轴距 单位：m
     Wheel_spacing = 0.163  # 主动轮轮距 单位：m
 
     # 对于阿克曼小车vz代表右前轮转向角度
@@ -57,7 +62,7 @@ def motor_lr(vx: float, vz: float):
     if vz > max_angle_r_rad:
         vz = max_angle_r_rad
     elif vz < max_angle_l_rad:
-        vz =max_angle_l_rad
+        vz = max_angle_l_rad
     # 运动学逆解
     if vz != 0:
         vl = vx * (R - 0.5 * Wheel_spacing) / R
@@ -66,6 +71,7 @@ def motor_lr(vx: float, vz: float):
         vl = vx
         vr = vx
     return vl, vr
+
 
 def update_steer_and_speed(steer_rad: float, speed_mps: float):
     WHEEL_PERIMETER = 0.21049
@@ -102,18 +108,25 @@ dl = 0.1
 target_speed = 0.2
 
 
-def update_state(mpst,vel=None):
+def update_state(mpst, vel=None):
     x, y, yaw = get_xyyaw_relative()
     # v = (fc.state.motor_l_speed_mps.value + fc.state.motor_r_speed_mps.value) / 2 if vel is None else vel
-    v= speed
+    v = speed
     logger.debug(f"x: {x}, y: {y}, yaw: {yaw}, v: {v}")
     mpst.update_state(x, y, yaw, v)
+
+
 DT = 0.1
 
+from route import get_route
+
+x = 1.3
+y = 3.2
+enter_p, leave_p, side = get_route(x, y, dl=dl)
 try:
     last_update = time.perf_counter()
     vel = target_speed
-    cx, cy, cyaw, ck = get_map_course_3(dl)
+    cx, cy, cyaw, ck = enter_p
     x, y, yaw = get_xyyaw_relative()
     initial_state = State(x, y, yaw, 0)
     mpst = Controller(cx, cy, cyaw, ck, target_speed, dl, initial_state)
@@ -129,10 +142,30 @@ try:
 
     update_steer_and_speed(0, 0)
     fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.BREAK)
-    detector.x_base = detector.x_base_l
+    detector.x_base = getattr(detector, f"x_base_{side}")
     detector.process()
     detector.x_base = detector.x_base_m
     detector.go_to_base()
-except KeyboardInterrupt:
+
+    last_update = time.perf_counter()
+    vel = target_speed
+    cx, cy, cyaw, ck = leave_p
+    x, y, yaw = get_xyyaw_relative()
+    initial_state = State(x, y, yaw, 0)
+    mpst = Controller(cx, cy, cyaw, ck, target_speed, dl, initial_state)
+    update_state(mpst)
+    for steer, acc in mpst.iter_output():
+        vel = mpst.get_speed()
+        update_steer_and_speed(steer, vel)
+        logger.debug(f"steer: {steer}, acc: {acc}, vel: {vel}")
+        while time.perf_counter() - last_update < DT:
+            time.sleep(0.02)
+        last_update = time.perf_counter()
+        update_state(mpst)
+
+    update_steer_and_speed(0, 0)
+    fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.BREAK)
+
+finally:
     update_steer_and_speed(0, 0)
     time.sleep(1)
