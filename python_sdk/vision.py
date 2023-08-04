@@ -12,7 +12,7 @@ from loguru import logger
 from simple_pid import PID
 
 fc = FC_Controller()
-fc.start_listen_serial("COM3", print_state=True, block_until_connected=True)
+fc.start_listen_serial("/dev/ttyS6", print_state=True, block_until_connected=True)
 fc.wait_for_connection()
 # while True:
 #     pulse = int(input("Pulse: "))
@@ -23,7 +23,7 @@ camera, id = open_camera()
 print(f"Camera ID: {id}")
 get = change_cam_resolution(camera, 920, 480, 60)
 print(f"Info: {get[0]}x{get[1]} @ {get[2]}fps")
-vision_debug()
+vision_debug(True)
 set_cam_autowb(camera, True)
 set_manual_exporsure(camera, -6.5)
 pid_x = PID(0.4, 0.02, 0.02, setpoint=0, output_limits=(-180, 180), auto_mode=False)
@@ -113,15 +113,15 @@ while True:
     img = camera.read()[1]
     if img is None:
         continue
-    cv2.imshow("Origin", img)
+    # cv2.imshow("Origin", img)
     ################# PROCESS ##########################
     try:
         img = process(img)
     except Exception as e:
         logger.error(e)
-    cv2.imshow("Processed", img)
+    # cv2.imshow("Processed", img)
     ####################################################
-    k = cv2.waitKey(1) & 0xFF
-    if k == ord("q"):
-        break
-cv2.destroyAllWindows()
+    # k = cv2.waitKey(1) & 0xFF
+    # if k == ord("q"):
+    #     break
+# cv2.destroyAllWindows()

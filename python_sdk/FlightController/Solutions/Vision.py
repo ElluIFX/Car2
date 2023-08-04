@@ -10,7 +10,7 @@ import pupil_apriltags as apriltag
 from scipy import ndimage
 
 _DEBUG = False
-_DEBUG_SAVEIMG
+_DEBUG_SAVEIMG = False
 
 
 def vision_debug(saveimg=False) -> None:

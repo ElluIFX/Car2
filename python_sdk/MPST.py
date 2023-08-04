@@ -33,8 +33,8 @@ STOP_SPEED = 0.2  # stop speed
 MAX_TIME = 500.0  # max simulation time
 
 # iterative paramter
-MAX_ITER = 2  # Max iteration
-DU_TH = 0.1  # iteration finish param
+MAX_ITER = 3  # Max iteration
+DU_TH = 0.08  # iteration finish param
 
 TARGET_SPEED = 0.3  # [m/s] target speed
 N_IND_SEARCH = 18  # Search index number
@@ -51,10 +51,10 @@ TREAD = 0.7 / 10  # [m]
 WB = 0.163  # [m]
 
 MAX_STEER = np.deg2rad(22.0)  # maximum steering angle [rad]
-MAX_DSTEER = np.deg2rad(22.0)  # maximum steering speed [rad/s]
+MAX_DSTEER = np.deg2rad(5.0)  # maximum steering speed [rad/s]
 MAX_SPEED = 0.8  # maximum speed [m/s]
-MIN_SPEED = -0.6  # minimum speed [m/s]
-MAX_ACCEL = 0.1  # maximum accel [m/ss]
+MIN_SPEED = -0.4  # minimum speed [m/s]
+MAX_ACCEL = 0.3  # maximum accel [m/ss]
 
 show_animation = True
 
@@ -911,14 +911,22 @@ def get_map_course(dl):
     ax = [1.35, 1.7, 1.7, 1.7, 2.3, 2.6, 4]
     ay = [0.25, 1.1, 1.6, 1.9, 2.3+0.05, 2.3+0.05, 2.3+0.05]
     cx, cy, cyaw, ck, s = calc_spline_course(ax, ay, ds=dl)
-    ax = ax[::-1]
-    ay = ay[::-1]
+    ax = [4 ,2.6]
+    ay = [ 2.3+0.05, 2.3+0.05]
     cx2, cy2, cyaw2, ck2, s2 = calc_spline_course(ax, ay, ds=dl)
     cyaw2 = [i - math.pi for i in cyaw2]
     cx.extend(cx2)
     cy.extend(cy2)
     cyaw.extend(cyaw2)
     ck.extend(ck2)
+    ax = [2.6,3.1,3.3,3.3,3,1.35]
+    ay = [2.3+0.05,2.3+0.05,1.9,1.2,0.6,0.25]
+    cx2, cy2, cyaw2, ck2, s2 = calc_spline_course(ax, ay, ds=dl)
+    cx.extend(cx2)
+    cy.extend(cy2)
+    cyaw.extend(cyaw2)
+    ck.extend(ck2)
+
 
     return cx, cy, cyaw, ck
 

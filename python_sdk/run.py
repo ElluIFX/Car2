@@ -6,10 +6,17 @@ import numpy as np
 from FlightController import FC_Controller
 from FlightController.Components import LD_Radar
 from loguru import logger
-from MPST import DT, MAX_STEER, Controller, State, get_map_course
+from SC import Controller, State, get_map_course,get_map_course_2
+
+speed = 0.0
+
+def callback(state):
+    global speed
+    v = (state.motor_l_speed_mps.value + state.motor_r_speed_mps.value) / 2
+    speed += (v - speed) * 0.1
 
 fc = FC_Controller()
-fc.start_listen_serial("/dev/ttyS6", print_state=False, block_until_connected=True)
+fc.start_listen_serial("/dev/ttyS6", print_state=False, block_until_connected=True,callback=callback)
 fc.wait_for_connection()
 fc.motor_reset(fc.MOTOR_L | fc.MOTOR_R)
 fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.SPD_CTRL)
@@ -65,9 +72,9 @@ def update_steer_and_speed(steer_rad: float, speed_mps: float):
     rpm = lambda speed_mps: speed_mps / WHEEL_PERIMETER * 60
     steer_deg = np.rad2deg(-steer_rad)
     pulse = get_pulse_from_deg(steer_deg)
-    # fc.set_steer_and_speed(pulse, rpm(speed_mps))
-    speed_l, speed_r = motor_lr(speed_mps, steer_rad)
-    fc.set_steer_and_two_speed(pulse, rpm(speed_l), rpm(speed_r))
+    fc.set_steer_and_speed(pulse, rpm(speed_mps))
+    # speed_l, speed_r = motor_lr(speed_mps, steer_rad)
+    # fc.set_steer_and_two_speed(pulse, rpm(speed_l), rpm(speed_r))
 
 
 def get_xy_yaw():
@@ -91,33 +98,52 @@ update_steer_and_speed(0, 0)
 time.sleep(2)
 calibrate()
 
-dl = 0.05
+dl = 0.1
 target_speed = 0.3
-cx, cy, cyaw, ck = get_map_course(dl)
-x, y, yaw = get_xyyaw_relative()
-initial_state = State(x, y, yaw, 0)
-mpst = Controller(cx, cy, cyaw, ck, target_speed, dl, initial_state)
 
 
-def update_state(vel=None):
+def update_state(mpst,vel=None):
     x, y, yaw = get_xyyaw_relative()
-    v = (fc.state.motor_l_speed_mps.value + fc.state.motor_r_speed_mps.value) / 2 if vel is None else vel
+    # v = (fc.state.motor_l_speed_mps.value + fc.state.motor_r_speed_mps.value) / 2 if vel is None else vel
+    v= speed
     logger.debug(f"x: {x}, y: {y}, yaw: {yaw}, v: {v}")
     mpst.update_state(x, y, yaw, v)
-
+DT = 0.1
 
 try:
     last_update = time.perf_counter()
-    update_state()
-    vel = 0
+    vel = target_speed
+    cx, cy, cyaw, ck = get_map_course(dl)
+    x, y, yaw = get_xyyaw_relative()
+    initial_state = State(x, y, yaw, 0)
+    mpst = Controller(cx, cy, cyaw, ck, target_speed, dl, initial_state)
+    update_state(mpst)
     for steer, acc in mpst.iter_output():
-        vel = mpst.a_to_v(acc, vel)
+        vel = mpst.get_speed()
         update_steer_and_speed(steer, vel)
         logger.debug(f"steer: {steer}, acc: {acc}, vel: {vel}")
-        # while time.perf_counter() - last_update < DT:
-        time.sleep(0.02)
+        while time.perf_counter() - last_update < DT:
+            time.sleep(0.02)
         last_update = time.perf_counter()
-        update_state()
+        update_state(mpst)
+
+    update_steer_and_speed(0, -target_speed)
+    time.sleep(5)
+
+    cx, cy, cyaw, ck = get_map_course_2(dl)
+    x, y, yaw = get_xyyaw_relative()
+    initial_state = State(x, y, yaw, 0)
+    mpst = Controller(cx, cy, cyaw, ck, target_speed, dl, initial_state)
+    update_state(mpst)
+    for steer, acc in mpst.iter_output():
+        vel = mpst.get_speed()
+        update_steer_and_speed(steer, vel)
+        logger.debug(f"steer: {steer}, acc: {acc}, vel: {vel}")
+        while time.perf_counter() - last_update < DT:
+            time.sleep(0.02)
+        last_update = time.perf_counter()
+        update_state(mpst)
+
     update_steer_and_speed(0, 0)
     fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.BREAK)
 except KeyboardInterrupt:
