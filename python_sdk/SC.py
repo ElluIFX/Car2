@@ -9,12 +9,12 @@ Ref:
     - [Autonomous Automobile Path Tracking](https://www.ri.cmu.edu/pub_files/2009/2/Automatic_Steering_Methods_for_Autonomous_Automobile_Path_Tracking.pdf)
 
 """
+import bisect
 import math
 import pathlib
 import sys
 from time import perf_counter
 from typing import Generator, Tuple
-import bisect
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -353,6 +353,7 @@ def calc_spline_course(x, y, ds=0.1):
 
     return rx, ry, ryaw, rk, s
 
+
 def plot_car(x, y, yaw, steer=0.0, cabcolor="-r", truckcolor="-k"):  # pragma: no cover
     outline = np.array(
         [
@@ -536,9 +537,47 @@ def get_map_course(dl):
     cx, cy, cyaw, ck, s = calc_spline_course(ax, ay, ds=dl)
     return cx, cy, cyaw, ck
 
+
 def get_map_course_2(dl):
-    ax = [2.6,3.1,3.3,3.3,3,1.35]
-    ay = [2.3+0.05,2.3+0.05,1.9,1.2,0.6,0.25]
+    ax = [2.6, 3.1, 3.3, 3.3, 3, 1.35]
+    ay = [2.3 + 0.05, 2.3 + 0.05, 1.9, 1.2, 0.6, 0.25]
+    cx, cy, cyaw, ck, s = calc_spline_course(ax, ay, ds=dl)
+    return cx, cy, cyaw, ck
+
+
+def get_map_course_3(dl):
+    ax = [
+        1.5,
+        1.9919999999999998,
+        3.192,
+        3.9071999999999996,
+        4.3008,
+        4.4544,
+        4.651199999999999,
+        4.656,
+        4.656,
+        4.6415999999999995,
+        4.344,
+        3.7632,
+        2.4576,
+        1.6991999999999998,
+    ]
+    ay = [
+        0.25,
+        0.7942238267148014,
+        0.29843561973525873,
+        0.25511432009626955,
+        0.25511432009626955,
+        0.259927797833935,
+        0.5631768953068592,
+        0.8182912154031288,
+        1.9157641395908545,
+        2.016847172081829,
+        2.271961492178099,
+        2.267148014440433,
+        2.252707581227437,
+        2.252707581227437,
+    ]
     cx, cy, cyaw, ck, s = calc_spline_course(ax, ay, ds=dl)
     return cx, cy, cyaw, ck
 

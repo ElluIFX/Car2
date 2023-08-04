@@ -6,7 +6,7 @@ import numpy as np
 from FlightController import FC_Controller
 from FlightController.Components import LD_Radar
 from loguru import logger
-from SC import Controller, State, get_map_course,get_map_course_2
+from SC import Controller, State, get_map_course,get_map_course_2,get_map_course_3
 
 speed = 0.0
 
@@ -113,24 +113,7 @@ DT = 0.1
 try:
     last_update = time.perf_counter()
     vel = target_speed
-    cx, cy, cyaw, ck = get_map_course(dl)
-    x, y, yaw = get_xyyaw_relative()
-    initial_state = State(x, y, yaw, 0)
-    mpst = Controller(cx, cy, cyaw, ck, target_speed, dl, initial_state)
-    update_state(mpst)
-    for steer, acc in mpst.iter_output():
-        vel = mpst.get_speed()
-        update_steer_and_speed(steer, vel)
-        logger.debug(f"steer: {steer}, acc: {acc}, vel: {vel}")
-        while time.perf_counter() - last_update < DT:
-            time.sleep(0.02)
-        last_update = time.perf_counter()
-        update_state(mpst)
-
-    update_steer_and_speed(0, -target_speed)
-    time.sleep(5)
-
-    cx, cy, cyaw, ck = get_map_course_2(dl)
+    cx, cy, cyaw, ck = get_map_course_3(dl)
     x, y, yaw = get_xyyaw_relative()
     initial_state = State(x, y, yaw, 0)
     mpst = Controller(cx, cy, cyaw, ck, target_speed, dl, initial_state)
