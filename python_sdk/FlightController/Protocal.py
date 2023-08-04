@@ -145,4 +145,4 @@ class FC_Protocol(FC_Base_Uart_Comunication):
         """
         设置转向舵机和后轮速度
         """
-        self.send_data_to_fc(struct.pack("<If", pulse, speed), 0x12)
+        self.send_data_to_fc(struct.pack("<If", round(pulse), round(speed)), 0x12)

@@ -337,7 +337,7 @@ Rd = np.diag([0.01, 1.0])  # input difference cost matrix
 Q = np.diag([1.0, 1.0, 0.5, 0.5])  # state cost matrix
 Qf = Q  # state final matrix
 GOAL_DIS = 1.5  # goal distance
-STOP_SPEED = 0.1  # stop speed
+STOP_SPEED = 0.05  # stop speed
 MAX_TIME = 500.0  # max simulation time
 
 # iterative paramter
@@ -359,12 +359,12 @@ TREAD = 0.7 / 10  # [m]
 WB = 0.163  # [m]
 
 MAX_STEER = np.deg2rad(27.0)  # maximum steering angle [rad]
-MAX_DSTEER = np.deg2rad(60.0)  # maximum steering speed [rad/s]
-MAX_SPEED = 1.0  # maximum speed [m/s]
-MIN_SPEED = -1.0  # minimum speed [m/s]
-MAX_ACCEL = 0.4  # maximum accel [m/ss]
+MAX_DSTEER = np.deg2rad(30.0)  # maximum steering speed [rad/s]
+MAX_SPEED = 2  # maximum speed [m/s]
+MIN_SPEED = -2  # minimum speed [m/s]
+MAX_ACCEL = 1  # maximum accel [m/ss]
 
-show_animation = True
+show_animation = False
 
 
 class State:
@@ -760,7 +760,7 @@ def do_simulation(cx, cy, cyaw, ck, sp, dl, initial_state):
 
 
 class Controller(object):
-    def __init__(self, cx, cy, cyaw, ck, target_speed, dl=0.01) -> None:
+    def __init__(self, cx, cy, cyaw, ck, target_speed, dl=0.01, initial_state=None) -> None:
         self.cx = cx
         self.cy = cy
         self.cyaw = cyaw
@@ -768,7 +768,7 @@ class Controller(object):
         self.dl = dl
         self.target_speed = target_speed
         self.sp = calc_speed_profile(cx, cy, cyaw, TARGET_SPEED)
-        self.state = State(x=cx[0], y=cy[0], yaw=cyaw[0], v=0.0)
+        self.state = State(x=cx[0], y=cy[0], yaw=cyaw[0], v=0.0) if initial_state is None else initial_state
         self.goal = [cx[-1], cy[-1]]
         if self.state.yaw - cyaw[0] >= math.pi:
             self.state.yaw -= math.pi * 2.0
@@ -778,7 +778,6 @@ class Controller(object):
         self.target_ind, _ = calc_nearest_index(self.state, cx, cy, cyaw, 0)
         self.odelta, self.oa = None, None
         self.cyaw = smooth_yaw(self.cyaw)
-        self.dt = DT
         self.last_update = 0.0
         self.paused = False
 
@@ -807,6 +806,13 @@ class Controller(object):
             di: steering angle
             ai: acceleration
         """
+        x = [self.state.x]
+        y = [self.state.y]
+        yaw = [self.state.yaw]
+        v = [self.state.v]
+        t = [0.0]
+        d = [0.0]
+        a = [0.0]
         self.last_update = perf_counter()
         while True:
             if self.paused:
@@ -821,18 +827,37 @@ class Controller(object):
             di, ai = 0.0, 0.0
             if self.odelta is not None:
                 di, ai = self.odelta[0], self.oa[0]
-            self.dt = (_ := perf_counter()) - self.last_update
-            self.last_update = _
-            self.time = self.time + self.dt
+            self.time = self.time + DT
+
+            x.append(self.state.x)
+            y.append(self.state.y)
+            yaw.append(self.state.yaw)
+            v.append(self.state.v)
+            t.append(self.time)
+            d.append(di)
+            a.append(ai)
             if check_goal(self.state, self.goal, self.target_ind, len(self.cx)):
                 print("Goal")
                 break
+
+            if show_animation:  # pragma: no cover
+                plt.cla()
+                if ox is not None:
+                    plt.plot(ox, oy, "xr", label="MPC")
+                plt.plot(self.cx, self.cy, "-r", label="course")
+                plt.plot(x, y, "ob", label="trajectory")
+                plt.plot(xref[0, :], xref[1, :], "xk", label="xref")
+                plt.plot(self.cx[self.target_ind], self.cy[self.target_ind], "xg", label="target")
+                plot_car(self.state.x, self.state.y, self.state.yaw, steer=di)
+                plt.axis("equal")
+                plt.grid(True)
+                plt.savefig("mpst.png")
             yield di, ai
             # t1 = perf_counter()
             # print(f"Time taken: {t1 - t0:.6f}s")
 
-    def a_to_v(self, a):
-        return self.state.v + a * self.dt
+    def a_to_v(self, a,v):
+        return v + a *DT
 
 
 def calc_speed_profile(cx, cy, cyaw, target_speed):

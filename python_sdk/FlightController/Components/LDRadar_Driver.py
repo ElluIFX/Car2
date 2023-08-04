@@ -202,9 +202,9 @@ class LD_Radar(object):
                             self._icpm.match(
                                 pts, debug=self.debug, debug_save_img=self.debug, debug_size=self._rtpose_size
                             )
+                            yaw = self._icpm.rotation_as_euler
                             x, y = self._icpm.translation
                         else:
-                            yaw = self._icpm.rotation_as_euler
                             if self._rtpose_polyline:
                                 img = self.map.output_polyline_cloud(
                                     size=int(self._rtpose_size),
