@@ -101,6 +101,7 @@ class MySignal(QObject):
     set_position_signal = Signal(float, float, float)
     reset_position_signal = Signal()
     takeoff_signal = Signal()
+    set_fire_signal = Signal(float, float)
 
 
 sig = MySignal()
@@ -121,6 +122,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.show_image(self.map_temp)
         self.last_px = None
         self.last_py = None
+        self.fire_x = None
+        self.fire_y = None
 
     def init_timers(self):
         pass
@@ -139,6 +142,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         sig.image_signal.connect(self.show_image)
         sig.set_position_signal.connect(self.set_position)
         sig.reset_position_signal.connect(self.reset_position)
+        sig.set_fire_signal.connect(self.set_fire)
+
+    def set_fire(self, x, y):
+        width = self.map_temp.shape[1]
+        height = self.map_temp.shape[0]
+        MAP_W = 48
+        MAP_H = 40
+        x = round(x / MAP_W * width)
+        y = height - round(y / MAP_H * height)
+        cv2.ellipse(self.map_temp, (x, y), (20, 50), 0, 0, 360, (0, 0, 255), -1)
+        cv2.ellipse(self.map_temp, (x - 24, y + 8), (20, 50), -30, 0, 360, (0, 50, 255), -1)
+        cv2.ellipse(self.map_temp, (x + 24, y + 8), (20, 50), 30, 0, 360, (0, 50, 255), -1)
+        self.show_image(self.map_temp)
 
     def init_widgets(self):
         pass
@@ -262,6 +278,7 @@ class MissionThread(QObject):
                 if not self.start_event.is_set():
                     self.start_event.set()
                     logger.debug(f"fire: {self.fire_x}, {self.fire_y}")
+                sig.set_fire_signal.emit(self.fire_x, self.fire_y)
             else:
                 if self.start_event.is_set():
                     self.start_event.clear()
