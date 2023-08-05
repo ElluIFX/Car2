@@ -82,6 +82,7 @@ import numpy as np
 import qdarktheme
 from FlightController import FC_Server
 from loguru import logger
+
 from map_ui import Ui_MainWindow
 
 speed = 0.0
@@ -145,6 +146,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         sig.set_fire_signal.connect(self.set_fire)
 
     def set_fire(self, x, y):
+        self.lcdFireX.display(f"{x:.2f}")
+        self.lcdFireY.display(f"{y:.2f}")
         width = self.map_temp.shape[1]
         height = self.map_temp.shape[0]
         MAP_W = 48
