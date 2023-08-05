@@ -256,7 +256,7 @@ class MissionThread(QObject):
                     fc.send_to_wireless(b"\x01")
             else:
                 self.takeoff_flag = False
-            if f:
+            if f > 0:
                 self.fire_x = -firey / 1000 + 0.35
                 self.fire_y = firex / 1000 + 0.35
                 if not self.start_event.is_set():
