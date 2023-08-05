@@ -151,9 +151,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         MAP_H = 40
         x = round(x / MAP_W * width)
         y = height - round(y / MAP_H * height)
-        cv2.ellipse(self.map_temp, (x, y), (20, 50), 0, 0, 360, (0, 0, 255), -1)
-        cv2.ellipse(self.map_temp, (x - 24, y + 8), (20, 50), -30, 0, 360, (0, 50, 255), -1)
-        cv2.ellipse(self.map_temp, (x + 24, y + 8), (20, 50), 30, 0, 360, (0, 50, 255), -1)
+        cv2.ellipse(self.map_temp, (x, y), (12, 30), 0, 0, 360, (0, 0, 255), -1)
+        cv2.ellipse(self.map_temp, (x - 14, y + 8), (12, 30), -30, 0, 360, (0, 50, 255), -1)
+        cv2.ellipse(self.map_temp, (x + 14, y + 8), (12, 30), 30, 0, 360, (0, 50, 255), -1)
         self.show_image(self.map_temp)
 
     def init_widgets(self):
