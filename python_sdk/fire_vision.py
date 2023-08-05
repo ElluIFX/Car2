@@ -12,9 +12,9 @@ from loguru import logger
 from simple_pid import PID
 
 class Detector:
-    x_base_m = 1180.0
-    x_base_l = 1850.0
-    x_base_r = 500.0
+    x_base_m = 1500.0
+    x_base_l = 2200.0
+    x_base_r = 800.0
 
     pwm_x_limit = (500, 2200)
     pwm_y_limit = (1500, 2500)
@@ -143,10 +143,10 @@ if __name__ == "__main__":
     fc.wait_for_connection()
 
 
-    # while True:
-    #     pulse = int(input("Pulse: "))
-    #     logger.debug(f"Set pulse: {pulse}")
-    #     fc.set_two_servo_pulse(pulse,1900)
+    while True:
+        pulse = int(input("Pulse: "))
+        logger.debug(f"Set pulse: {pulse}")
+        fc.set_two_servo_pulse(pulse,1900)
     try:
         detector = Detector(fc)
         # detector.x_base = detector.x_base_l

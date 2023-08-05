@@ -2,12 +2,23 @@ import os
 import time
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-x", "--x", type=float, default=0.0)
+parser.add_argument("-y", "--y", type=float, default=0.0)
+
+args = parser.parse_args()
+x = args.x
+y = args.y
+
 import numpy as np
 from fire_vision import Detector
-from FlightController import FC_Controller
+from FlightController import FC_Controller,FC_Client
 from FlightController.Components import LD_Radar
 from loguru import logger
-from SC import Controller, State, get_map_course, get_map_course_2, get_map_course_3
+from SC import Controller, State
 
 speed = 0.0
 
@@ -18,8 +29,10 @@ def callback(state):
     speed += (v - speed) * 0.1
 
 
-fc = FC_Controller()
-fc.start_listen_serial("/dev/ttyS6", print_state=False, block_until_connected=True, callback=callback)
+# fc = FC_Controller()
+# fc.start_listen_serial("/dev/ttyS6", print_state=False, block_until_connected=True, callback=callback)
+fc = FC_Client()
+fc.connect(callback=callback)
 fc.wait_for_connection()
 fc.motor_reset(fc.MOTOR_L | fc.MOTOR_R)
 fc.set_motor_mode(fc.MOTOR_L | fc.MOTOR_R, fc.SPD_CTRL)
@@ -118,9 +131,6 @@ def update_state(mpst, vel=None):
 DT = 0.1
 
 from route import get_route
-
-x = 4.3
-y = 1.2
 try:
     enter_p, leave_p, side = get_route(x, y, dl=dl)
     last_update = time.perf_counter()

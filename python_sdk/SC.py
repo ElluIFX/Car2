@@ -15,6 +15,7 @@ import pathlib
 import sys
 from time import perf_counter
 from typing import Generator, Tuple
+from loguru import logger
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -702,6 +703,7 @@ class Controller(object):
         self.ck = ck
         self.dl = dl
         self.target_speed = target_speed
+        logger.debug(f"len(cx): {len(cx)}, len(cy): {len(cy)}, len(cyaw): {len(cyaw)}, len(ck): {len(ck)}")
         self.sp = calc_speed_profile(cx, cy, cyaw, target_speed)
         self.state = State(x=cx[0], y=cy[0], yaw=cyaw[0], v=0.0) if initial_state is None else initial_state
         self.goal = [cx[-1], cy[-1]]
