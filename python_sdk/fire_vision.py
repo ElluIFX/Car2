@@ -11,6 +11,7 @@ from FlightController.Solutions.Vision_Net import *
 from loguru import logger
 from simple_pid import PID
 
+
 class Detector:
     x_base_m = 1500.0
     x_base_l = 2200.0
@@ -44,9 +45,7 @@ class Detector:
         vision_debug(True)
         set_cam_autowb(self.camera, True)
         set_manual_exporsure(self.camera, 80)
-        self.pid_x = PID(
-            0.4, 0.02, 0.02, setpoint=0, output_limits=(-180, 180), auto_mode=False
-        )
+        self.pid_x = PID(0.4, 0.02, 0.02, setpoint=0, output_limits=(-180, 180), auto_mode=False)
         self.pid_y = PID(
             0.6,
             0.01,
@@ -65,10 +64,16 @@ class Detector:
         self.y_pwm = self.y_base
         self.fc.set_two_servo_pulse(round(self.x_base), round(self.y_base))
 
-    def process(self, loop=False):
+    def process(self, loop=False, timeout=20):
         fc = self.fc
         sucessed = False
+        start_time = time.perf_counter()
         while True:
+            if time.perf_counter() - start_time > timeout:
+                logger.warning("Fire vision timeout")
+                fc.set_two_servo_pulse(round(self.x_base), round(self.y_base))
+                fc.set_laser(False)
+                return
             img = self.camera.read()[1]
             if img is None:
                 continue
@@ -105,17 +110,9 @@ class Detector:
                     random_add = min(random_add, self.max_random_add)
                     # dx += random.randint(-x_random_range - random_add, x_random_range + random_add)
                     # dy += random.randint(-y_random_range, y_random_range)
-                    dx += math.sin(time.perf_counter() * 15) * (
-                        self.x_random_range + random_add
-                    )
-                    dy += math.sin(time.perf_counter() * 2) * (
-                        self.y_random_range + random_add / 5
-                    )
-                if (
-                    (not self.found)
-                    and abs(dx - self.pid_x.setpoint) < 5
-                    and abs(dy - self.pid_y.setpoint) < 5
-                ):
+                    dx += math.sin(time.perf_counter() * 15) * (self.x_random_range + random_add)
+                    dy += math.sin(time.perf_counter() * 2) * (self.y_random_range + random_add / 5)
+                if (not self.found) and abs(dx - self.pid_x.setpoint) < 5 and abs(dy - self.pid_y.setpoint) < 5:
                     self.found = True
                     self.found_time = time.perf_counter()
                     # sp = y_sta + dy * (y_pwm - y_base)
@@ -124,29 +121,23 @@ class Detector:
                     sucessed = True
                 out_x = self.pid_x(dx)
                 self.x_pwm += out_x  # type: ignore
-                self.x_pwm = max(
-                    self.pwm_x_limit[0], min(self.pwm_x_limit[1], self.x_pwm)
-                )
+                self.x_pwm = max(self.pwm_x_limit[0], min(self.pwm_x_limit[1], self.x_pwm))
                 out_y = self.pid_y(dy)
                 self.y_pwm -= out_y  # type: ignore
-                self.y_pwm = max(
-                    self.pwm_y_limit[0], min(self.pwm_y_limit[1], self.y_pwm)
-                )
+                self.y_pwm = max(self.pwm_y_limit[0], min(self.pwm_y_limit[1], self.y_pwm))
                 fc.set_two_servo_pulse(round(self.x_pwm), round(self.y_pwm))  # 1900
 
 
 #######################################################
 if __name__ == "__main__":
-
     fc = FC_Controller()
     fc.start_listen_serial("/dev/ttyS6", print_state=True, block_until_connected=True)
     fc.wait_for_connection()
 
-
     while True:
         pulse = int(input("Pulse: "))
         logger.debug(f"Set pulse: {pulse}")
-        fc.set_two_servo_pulse(pulse,1900)
+        fc.set_two_servo_pulse(pulse, 1900)
     try:
         detector = Detector(fc)
         # detector.x_base = detector.x_base_l
