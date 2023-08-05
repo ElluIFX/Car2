@@ -129,10 +129,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def init_timers(self):
         pass
 
-    @Slot()
-    def on_pushButton_clicked(self):
-        sig.takeoff_signal.emit()
-
     def init_threads(self):
         self.misThread = QThread()
         self.misWorker = MissionThread()

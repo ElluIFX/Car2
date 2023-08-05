@@ -7,26 +7,26 @@
     <x>0</x>
     <y>0</y>
     <width>1121</width>
-    <height>815</height>
+    <height>844</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1">
+   <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,1">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout">
+     <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1,1,0,1">
       <item>
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="label_5">
         <property name="font">
          <font>
           <family>黑体</family>
-          <pointsize>36</pointsize>
+          <pointsize>26</pointsize>
          </font>
         </property>
         <property name="text">
-         <string>X / dm</string>
+         <string>无人机坐标：</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
@@ -67,22 +67,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="label_2">
-        <property name="font">
-         <font>
-          <family>黑体</family>
-          <pointsize>36</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Y / dm</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QLCDNumber" name="lcdY">
         <property name="minimumSize">
          <size>
@@ -116,15 +100,15 @@
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="label_3">
+       <widget class="QLabel" name="label_6">
         <property name="font">
          <font>
           <family>黑体</family>
-          <pointsize>36</pointsize>
+          <pointsize>26</pointsize>
          </font>
         </property>
         <property name="text">
-         <string> DIST / dm </string>
+         <string>路程：</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
@@ -164,16 +148,23 @@
         </property>
        </widget>
       </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="bottomMargin">
+       <number>9</number>
+      </property>
       <item>
        <widget class="QLabel" name="label_4">
         <property name="font">
          <font>
           <family>黑体</family>
-          <pointsize>36</pointsize>
+          <pointsize>26</pointsize>
          </font>
         </property>
         <property name="text">
-         <string>Fire X / dm</string>
+         <string>火灾坐标：</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
@@ -214,22 +205,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="label_5">
-        <property name="font">
-         <font>
-          <family>黑体</family>
-          <pointsize>36</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Fire Y / dm</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QLCDNumber" name="lcdFireY">
         <property name="minimumSize">
          <size>
@@ -259,37 +234,6 @@
         </property>
         <property name="intValue" stdset="0">
          <number>0</number>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButton">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>30</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="sizeIncrement">
-         <size>
-          <width>0</width>
-          <height>43</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>TF</string>
         </property>
        </widget>
       </item>
